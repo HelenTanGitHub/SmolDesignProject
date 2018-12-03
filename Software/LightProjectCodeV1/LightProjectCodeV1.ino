@@ -18,6 +18,7 @@
  int operating_mode = 0;
  boolean button_pushed = false;
  boolean previous_button_state = false;
+ boolean flash_light = false;
  int PWM_OUT = 0;
  const long interval = int(1000/FLASH_RATE_HZ/2); 
  int ledState = LOW;
@@ -27,7 +28,8 @@ void setup() {
   pinMode(BUTTON_IN, INPUT);
   pinMode(PWM_LED_OUT, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(BUTTON_IN), button_pushed_interrupt, FALLING);
-
+  Serial.begin(9600);
+  analogWrite(PWM_LED_OUT, PWM_OUT);
 }
 
 void loop() {
@@ -35,39 +37,49 @@ void loop() {
 
   switch (operating_mode) {
     case 0:
-    PWM_OUT = 0;
-    analogWrite(PWM_LED_OUT, PWM_OUT);
+      PWM_OUT = 0;
+      flash_light = false;
+      break;
     case 1:
-    PWM_OUT = PWM_MAX;
-    analogWrite(PWM_LED_OUT, PWM_OUT);
+      PWM_OUT = PWM_MAX;
+      break;
     case 2:
-    PWM_OUT = int(PWM_MAX/2);
-    analogWrite(PWM_LED_OUT, PWM_OUT);
+      PWM_OUT = int(PWM_MAX/2);
+      break;
     case 3:
-    PWM_OUT = int(PWM_MAX/4);
-    analogWrite(PWM_LED_OUT, PWM_OUT);
+      PWM_OUT = int(PWM_MAX/4);
+      break;
     case 4:
-    flash_the_light();
+      flash_light = true;
+      break;
   }
+  output();
+  //Serial.println(operating_mode); - this works
 }
 
 void button_pushed_interrupt(){
   if(!previous_button_state){
     button_pushed = true;
     previous_button_state = true;
+    //Serial.print("pushed"); - this works
   }
 }
 
 void flash_the_light(){
-  unsigned long currentMillis = millis();
+   unsigned long currentMillis = millis();
+
   if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
     previousMillis = currentMillis;
-    if(ledState == LOW){
-      ledState == HIGH;
+
+    // if the LED is off turn it on and vice-versa:
+    if (ledState == LOW) {
+      ledState = HIGH;
+    } else {
+      ledState = LOW;
     }
-    else {
-      ledState == LOW;
-    }
+
+    // set the LED with the ledState of the variable:
     digitalWrite(PWM_LED_OUT, ledState);
   }
 }
@@ -85,6 +97,15 @@ void check_button_press(){
     else {
       operating_mode = 0;
     }
+  }
+}
+
+void output(){
+  if(flash_light){
+    flash_the_light();
+  }
+  else{
+    analogWrite(PWM_LED_OUT, PWM_OUT);
   }
 }
 
